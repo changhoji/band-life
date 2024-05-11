@@ -39,11 +39,11 @@ export default function ReserveHome() {
     <main className='flex min-h-screen flex-col items-center justify-between p-24'>
       <TimeSelector />
       {places.map((place) => (
-        <div>
+        <div key={place.url.toString()}>
           <div>{place.name}</div>
           <ul>
             {place.rooms.map((room) => (
-              <Link href={room.url}>
+              <Link href={room.url} key={room.url.toString()}>
                 <div>{room.name}</div>
               </Link>
             ))}
