@@ -1,11 +1,13 @@
 'use server';
 
+//https://velog.io/@segyeom_dev/Crawling-puppeteer
+
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { Element, load } from 'cheerio';
 import { ReserveTime } from '@/recoil/reserve-time';
 import puppeteer, { Browser } from 'puppeteer';
 import dayjs from 'dayjs';
-import { Place, Room } from './type';
+import { Place, Room, SearchedPlace } from './type';
 
 export default async function handler(
   req: NextApiRequest,
@@ -15,18 +17,6 @@ export default async function handler(
     dummy: 'hello',
   });
 }
-
-const getHtml = async (browser: Browser, url: string) => {
-  try {
-    const page = await browser.newPage();
-    await page.goto(url);
-
-    const content = await page.content();
-    return load(content);
-  } catch (error) {
-    console.log(error);
-  }
-};
 
 export const findEmptyRooms = async ({
   reserveTime,
@@ -51,7 +41,7 @@ export const findEmptyRooms = async ({
     const $ = load(content);
     page.close();
 
-    if ($ == undefined) {
+    if ($ === undefined) {
       return;
     }
 
@@ -82,7 +72,7 @@ export const findEmptyRooms = async ({
       const $ = load(content);
       page.close();
 
-      if ($ == undefined) {
+      if ($ === undefined) {
         return;
       }
 
@@ -114,12 +104,65 @@ export const findEmptyRooms = async ({
       }
     }
 
-    if (place.rooms.length > 0) {
-      places.push(place);
-    }
+    //   if (place.rooms.length > 0) {
+    //     places.push(place);
+    //   }
+    // }
+  }
+  return places;
+};
+
+export const searchPlaceInNaverMap = async (word: string) => {
+  const browser = await puppeteer.launch({
+    args: ['--disabled-features=site-per-process'],
+    headless: true,
+  });
+
+  let places: SearchedPlace[] = [];
+  const searchUrl = `https://map.naver.com/p/search/${word}`;
+
+  const page = await browser.newPage();
+  await page.goto(searchUrl);
+  await page.waitForNetworkIdle({ idleTime: 250 });
+
+  let frame;
+
+  try {
+    frame = await page.waitForFrame(async frame => {
+      return frame.name() === 'searchIframe'
+    })
+  } catch (error) {
+    console.log(error);
   }
 
-  console.log(places);
+  if (frame === undefined) {
+    alert('검색 결과가 없습니다');
+    return;
+  }
 
-  return places;
+  const placeCount = (await frame.$$('#_pcmap_list_scroll_container > ul > li')).length;
+
+  let searchedPlace: SearchedPlace[] = [];
+  for(let i = 1; i < placeCount; i++) {
+    await frame.click(`#_pcmap_list_scroll_container > ul > li:nth-child(${i}) .place_bluelink`);
+    let detailFrame = await page.waitForFrame(async frame => frame.name() === 'entryIframe');
+
+    if (detailFrame === undefined) continue;
+
+    const $ = load(await detailFrame.content());
+
+    if ($ ===  undefined) continue;
+
+    const info: SearchedPlace = {
+      name: $('#_title > div > span:first-child').text()!,
+      url: page.url(),
+      bookingUrl: `http://pcmap.${$('.place_section > div:nth-child(4) a').attr('href')}`,
+      photoUrl: 'temp',
+    }
+
+    searchedPlace.push(info);
+  }
+
+
+  return searchedPlace;
 };

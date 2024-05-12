@@ -8,6 +8,7 @@ import { reserveTimeState } from '@/recoil/reserve-time';
 import { findEmptyRooms } from '@/api/crawler/crawl';
 import { Place } from '@/api/crawler/type';
 import Link from 'next/link';
+import SearchPlace from './search-place';
 
 const placeUrls = [
   'https://pcmap.place.naver.com/place/1683336842/ticket?entry=pll&from=nx&fromNxList=true&from=map&fromPanelNum=2&timestamp=202405110407',
@@ -37,6 +38,7 @@ export default function ReserveHome() {
 
   return (
     <main className='flex min-h-screen flex-col items-center justify-between p-24'>
+      <SearchPlace />
       <TimeSelector />
       {places.map((place) => (
         <div key={place.url.toString()}>

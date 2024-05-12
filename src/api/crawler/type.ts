@@ -13,3 +13,10 @@ export interface Room {
   photoUrl: string | URL;
   price: number;
 }
+
+export interface SearchedPlace {
+  name: string;
+  url: string | URL;
+  bookingUrl: string | URL;
+  photoUrl: string | URL;
+}
