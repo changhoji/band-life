@@ -1,4 +1,4 @@
-import { searchPlaceInNaverMap } from '@/api/crawler/crawl';
+import { getBookingUrl, searchPlaceInNaverMap } from '@/api/crawler/crawl';
 import { SearchedPlace } from '@/api/crawler/type';
 import { Button, List } from 'antd';
 import Search from 'antd/es/input/Search';
@@ -6,7 +6,7 @@ import { useState } from 'react';
 
 export default function SearchPlace() {
   const [searchWord, setSearchWord] = useState('');
-  const [places, setPlaces] = useState<SearchedPlace[]>([]);
+  const [places, setPlaces] = useState<string[]>([]);
 
   const onSearch = async () => {
     const result = await searchPlaceInNaverMap(searchWord);
@@ -16,9 +16,19 @@ export default function SearchPlace() {
     console.log(`places = ${places.toString()}`);
   };
 
-  const renderItem = (item: SearchedPlace) => {
+  const onClick = async (name: string) => {
+    const url = await getBookingUrl(name);
+    console.log(url);
+  };
+
+  const renderItem = (item: string) => {
     console.log(item);
-    return <List.Item>{item.name}</List.Item>;
+    return (
+      <List.Item>
+        <div>{item}</div>
+        <Button onClick={() => onClick(item)}>추가</Button>
+      </List.Item>
+    );
   };
 
   return (

@@ -104,10 +104,9 @@ export const findEmptyRooms = async ({
       }
     }
 
-    //   if (place.rooms.length > 0) {
-    //     places.push(place);
-    //   }
-    // }
+    if (place.rooms.length > 0) {
+      places.push(place);
+    }
   }
   return places;
 };
@@ -118,7 +117,6 @@ export const searchPlaceInNaverMap = async (word: string) => {
     headless: true,
   });
 
-  let places: SearchedPlace[] = [];
   const searchUrl = `https://map.naver.com/p/search/${word}`;
 
   const page = await browser.newPage();
@@ -128,9 +126,9 @@ export const searchPlaceInNaverMap = async (word: string) => {
   let frame;
 
   try {
-    frame = await page.waitForFrame(async frame => {
-      return frame.name() === 'searchIframe'
-    })
+    frame = await page.waitForFrame(
+      async (frame) => frame.name() === 'searchIframe'
+    );
   } catch (error) {
     console.log(error);
   }
@@ -140,29 +138,83 @@ export const searchPlaceInNaverMap = async (word: string) => {
     return;
   }
 
-  const placeCount = (await frame.$$('#_pcmap_list_scroll_container > ul > li')).length;
+  // const places = await frame.$$('#_pcmap_list_scroll_container > ul > li');
+  const places = await frame.$$eval(
+    '.place_bluelink > span:first-child',
+    (elements) => Array.from(elements.map((element) => element.innerText))
+  );
 
-  let searchedPlace: SearchedPlace[] = [];
-  for(let i = 1; i < placeCount; i++) {
-    await frame.click(`#_pcmap_list_scroll_container > ul > li:nth-child(${i}) .place_bluelink`);
-    let detailFrame = await page.waitForFrame(async frame => frame.name() === 'entryIframe');
+  return places;
 
-    if (detailFrame === undefined) continue;
+  // let searchedPlace: SearchedPlace[] = [];
+  // for(let i = 1; i < placeCount; i++) {
+  //   await frame.click(`#_pcmap_list_scroll_container > ul > li:nth-child(${i}) .place_bluelink`);
+  //   let detailFrame = await page.waitForFrame(async frame => frame.name() === 'entryIframe');
+
+  //   if (detailFrame === undefined) continue;
+
+  //   const $ = load(await detailFrame.content());
+
+  //   if ($ ===  undefined) continue;
+
+  //   const info: SearchedPlace = {
+  //     name: $('#_title > div > span:first-child').text()!,
+  //     url: page.url(),
+  //     bookingUrl: `http://pcmap.${$('.place_section > div:nth-child(4) a').attr('href')}`,
+  //     photoUrl: 'temp',
+  //   }
+
+  //   searchedPlace.push(info);
+  // }
+
+  // return searchedPlace;
+};
+
+export const getBookingUrl = async (name: string) => {
+  let browser = await puppeteer.launch({
+    headless: false,
+  });
+
+  let page = await browser.newPage();
+  const searchUrl = `https://map.naver.com/p/search/${name}`;
+  await page.goto(searchUrl);
+  await page.waitForNetworkIdle();
+
+  let pageUrl = page.url();
+  let placeNumber: number;
+
+  if (pageUrl.search('place/') === -1) {
+    let frame = await page.waitForFrame(
+      async (frame) => frame.name() === 'searchIframe'
+    );
+
+    if (frame === undefined) {
+      alert('error');
+      return;
+    }
+
+    await frame.click(
+      '#_pcmap_list_scroll_container > ul > li:first-child .place_bluelink'
+    );
+    let detailFrame = await page.waitForFrame(
+      async (frame) => frame.name() === 'entryIframe'
+    );
+
+    if (detailFrame === undefined) {
+      alert('error');
+      return;
+    }
 
     const $ = load(await detailFrame.content());
 
-    if ($ ===  undefined) continue;
+    if ($ === undefined) return;
 
-    const info: SearchedPlace = {
-      name: $('#_title > div > span:first-child').text()!,
-      url: page.url(),
-      bookingUrl: `http://pcmap.${$('.place_section > div:nth-child(4) a').attr('href')}`,
-      photoUrl: 'temp',
-    }
-
-    searchedPlace.push(info);
+    pageUrl = $('.place_section > div:nth-child(4) a').attr('href')!;
+    placeNumber = Number(pageUrl.split('place/')[1].split('/booking')[0]);
+    console.log(pageUrl);
+  } else {
+    placeNumber = Number(pageUrl.split('place/')[1].split('?')[0]);
   }
 
-
-  return searchedPlace;
+  return `http://pcmap.place.naver.com/place/${placeNumber}/ticket`;
 };
