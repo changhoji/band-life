@@ -13,3 +13,9 @@ export interface Room {
   photoUrl: string | URL;
   price: number;
 }
+
+export interface PlaceInfo {
+  name: string;
+  id: string;
+  photoUrl: string | URL;
+}
