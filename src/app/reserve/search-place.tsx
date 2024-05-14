@@ -1,12 +1,16 @@
-import { getBookingUrl, searchPlaceInNaverMap } from '@/api/crawler/crawl';
-import { SearchedPlace } from '@/api/crawler/type';
+import { getPlaceInfo, searchPlaceInNaverMap } from '@/api/crawler/crawl';
+import { PlaceInfo } from '@/api/crawler/type';
+import { placesState } from '@/recoil/places';
 import { Button, List } from 'antd';
 import Search from 'antd/es/input/Search';
 import { useState } from 'react';
+import { useSetRecoilState } from 'recoil';
 
 export default function SearchPlace() {
   const [searchWord, setSearchWord] = useState('');
   const [places, setPlaces] = useState<string[]>([]);
+
+  const setPlaceUrls = useSetRecoilState(placesState);
 
   const onSearch = async () => {
     const result = await searchPlaceInNaverMap(searchWord);
@@ -17,8 +21,8 @@ export default function SearchPlace() {
   };
 
   const onClick = async (name: string) => {
-    const url = await getBookingUrl(name);
-    console.log(url);
+    const placeInfo = await getPlaceInfo(name);
+    setPlaceUrls((e) => [...e, placeInfo!]);
   };
 
   const renderItem = (item: string) => {

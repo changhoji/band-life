@@ -1,23 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Button, DatePicker, TimePicker } from 'antd';
+import { Button, List } from 'antd';
 import TimeSelector from './time-selector';
 import { useRecoilState } from 'recoil';
 import { reserveTimeState } from '@/recoil/reserve-time';
-import { findEmptyRooms } from '@/api/crawler/crawl';
-import { Place } from '@/api/crawler/type';
-import Link from 'next/link';
+import { findEmptyRooms, getBookingUrl } from '@/api/crawler/crawl';
 import SearchPlace from './search-place';
+import { placesState } from '@/recoil/places';
+import EmptyRooms from './empty-rooms';
+import { emptyPlacesState } from '@/recoil/empty-places';
+import RegisteredPlaces from './registered-places';
 
 const placeUrls = [
   'https://pcmap.place.naver.com/place/1683336842/ticket?entry=pll&from=nx&fromNxList=true&from=map&fromPanelNum=2&timestamp=202405110407',
 ];
 
 export default function ReserveHome() {
-  const [text, setText] = useState('');
-  const [reserveTime, _] = useRecoilState(reserveTimeState);
-  const [places, setPlaces] = useState<Place[]>([]);
+  const [reserveTime, _] = useRecoilState(reserveTimeState); // time that wnat to search
+  const [places, setPlaces] = useRecoilState(placesState);
+  const [emptyPlaces, setEmptyPlaces] = useRecoilState(emptyPlacesState);
 
   const onClick = async () => {
     if (reserveTime == null) {
@@ -25,35 +26,36 @@ export default function ReserveHome() {
       return;
     }
 
+    const urls = [];
+    for (let i = 0; i < places.length; i++) {
+      urls.push(await getBookingUrl(places[i].id));
+    }
+
+    console.log(urls);
+
     const ret = await findEmptyRooms({
       reserveTime: reserveTime,
-      urls: placeUrls,
+      urls: urls,
     });
+
     if (ret != undefined) {
-      setPlaces(ret);
+      setEmptyPlaces(ret);
     }
 
     console.log(places);
   };
 
+  const renderItem = (item: string) => {
+    return <List.Item>{item}</List.Item>;
+  };
+
   return (
     <main className='flex min-h-screen flex-col items-center justify-between p-24'>
       <SearchPlace />
+      <RegisteredPlaces />
       <TimeSelector />
-      {places.map((place) => (
-        <div key={place.url.toString()}>
-          <div>{place.name}</div>
-          <ul>
-            {place.rooms.map((room) => (
-              <Link href={room.url} key={room.url.toString()}>
-                <div>{room.name}</div>
-              </Link>
-            ))}
-          </ul>
-        </div>
-      ))}
       <Button onClick={onClick}>find empty rooms</Button>
-      <div>{text}</div>
+      <EmptyRooms />
     </main>
   );
 }

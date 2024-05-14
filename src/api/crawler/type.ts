@@ -14,9 +14,8 @@ export interface Room {
   price: number;
 }
 
-export interface SearchedPlace {
+export interface PlaceInfo {
   name: string;
-  url: string | URL;
-  bookingUrl: string | URL;
+  id: string;
   photoUrl: string | URL;
 }

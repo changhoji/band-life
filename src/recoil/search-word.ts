@@ -1,6 +1,6 @@
 import { atom } from 'recoil';
 
-export const searchWord = atom<string | null>({
-  key: 'searchWord',
+export const searchWordState = atom<string | null>({
+  key: 'searchWordState',
   default: null,
 });

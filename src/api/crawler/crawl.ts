@@ -7,16 +7,15 @@ import { Element, load } from 'cheerio';
 import { ReserveTime } from '@/recoil/reserve-time';
 import puppeteer, { Browser } from 'puppeteer';
 import dayjs from 'dayjs';
-import { Place, Room, SearchedPlace } from './type';
+import { Place, Room, PlaceInfo } from './type';
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  res.status(200).json({
-    dummy: 'hello',
-  });
-}
+export const getPlaceUrl = async (id: string) => {
+  return `http://map.naver.com/p/entry/place/${id}?c=15.00,0,0,0,dh`;
+};
+
+export const getBookingUrl = async (id: string) => {
+  return `http://pcmap.place.naver.com/place/${id}/ticket`;
+};
 
 export const findEmptyRooms = async ({
   reserveTime,
@@ -25,6 +24,8 @@ export const findEmptyRooms = async ({
   reserveTime: ReserveTime;
   urls: string[];
 }) => {
+  console.log('asdf');
+  console.log(urls);
   const browser = await puppeteer.launch({});
 
   let places: Place[] = [];
@@ -41,12 +42,12 @@ export const findEmptyRooms = async ({
     const $ = load(content);
     page.close();
 
-    if ($ === undefined) {
+    if ($ == undefined) {
       return;
     }
 
     let place: Place = {
-      name: $('#_title > div:first-child').text()!,
+      name: $('#_title > div >:first-child').text()!,
       url: placeUrl,
       photoUrl: 'temp',
       rooms: [],
@@ -145,34 +146,11 @@ export const searchPlaceInNaverMap = async (word: string) => {
   );
 
   return places;
-
-  // let searchedPlace: SearchedPlace[] = [];
-  // for(let i = 1; i < placeCount; i++) {
-  //   await frame.click(`#_pcmap_list_scroll_container > ul > li:nth-child(${i}) .place_bluelink`);
-  //   let detailFrame = await page.waitForFrame(async frame => frame.name() === 'entryIframe');
-
-  //   if (detailFrame === undefined) continue;
-
-  //   const $ = load(await detailFrame.content());
-
-  //   if ($ ===  undefined) continue;
-
-  //   const info: SearchedPlace = {
-  //     name: $('#_title > div > span:first-child').text()!,
-  //     url: page.url(),
-  //     bookingUrl: `http://pcmap.${$('.place_section > div:nth-child(4) a').attr('href')}`,
-  //     photoUrl: 'temp',
-  //   }
-
-  //   searchedPlace.push(info);
-  // }
-
-  // return searchedPlace;
 };
 
-export const getBookingUrl = async (name: string) => {
+export const getPlaceInfo = async (name: string): Promise<PlaceInfo | null> => {
   let browser = await puppeteer.launch({
-    headless: false,
+    headless: true,
   });
 
   let page = await browser.newPage();
@@ -181,7 +159,7 @@ export const getBookingUrl = async (name: string) => {
   await page.waitForNetworkIdle();
 
   let pageUrl = page.url();
-  let placeNumber: number;
+  let placeNumber: string;
 
   if (pageUrl.search('place/') === -1) {
     let frame = await page.waitForFrame(
@@ -190,7 +168,7 @@ export const getBookingUrl = async (name: string) => {
 
     if (frame === undefined) {
       alert('error');
-      return;
+      return null;
     }
 
     await frame.click(
@@ -202,19 +180,23 @@ export const getBookingUrl = async (name: string) => {
 
     if (detailFrame === undefined) {
       alert('error');
-      return;
+      return null;
     }
 
     const $ = load(await detailFrame.content());
 
-    if ($ === undefined) return;
+    if ($ === undefined) return null;
 
     pageUrl = $('.place_section > div:nth-child(4) a').attr('href')!;
-    placeNumber = Number(pageUrl.split('place/')[1].split('/booking')[0]);
+    placeNumber = pageUrl.split('place/')[1].split('/booking')[0];
     console.log(pageUrl);
   } else {
-    placeNumber = Number(pageUrl.split('place/')[1].split('?')[0]);
+    placeNumber = pageUrl.split('place/')[1].split('?')[0];
   }
 
-  return `http://pcmap.place.naver.com/place/${placeNumber}/ticket`;
+  return {
+    name: name,
+    id: placeNumber,
+    photoUrl: 'temp',
+  };
 };
