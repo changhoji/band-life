@@ -26,7 +26,9 @@ export const findEmptyRooms = async ({
 }) => {
   console.log('asdf');
   console.log(urls);
-  const browser = await puppeteer.launch({});
+  const browser = await puppeteer.launch({
+    headless: true,
+  });
 
   let places: Place[] = [];
 
@@ -43,7 +45,7 @@ export const findEmptyRooms = async ({
     page.close();
 
     if ($ == undefined) {
-      return;
+      return null;
     }
 
     let place: Place = {
@@ -65,7 +67,7 @@ export const findEmptyRooms = async ({
       const page = await browser.newPage();
 
       await page.goto(
-        roomUrl + `&startDate=${dayjs(reserveTime.date).format('YYYY-MM-DD')}`
+        roomUrl + `&startDate=${dayjs(reserveTime.date!).format('YYYY-MM-DD')}`
       );
       await page.waitForSelector('ul.time_list');
 
@@ -74,7 +76,7 @@ export const findEmptyRooms = async ({
       page.close();
 
       if ($ === undefined) {
-        return;
+        return null;
       }
 
       let room: Room = {
@@ -93,7 +95,7 @@ export const findEmptyRooms = async ({
       });
 
       let flag: boolean = true;
-      for (let i = reserveTime.from; i < reserveTime.to; i++) {
+      for (let i = reserveTime.from!; i < reserveTime.to!; i++) {
         if (timeClasses[i].search('disabled') != -1) {
           flag = false;
           break;
@@ -122,7 +124,6 @@ export const searchPlaceInNaverMap = async (word: string) => {
 
   const page = await browser.newPage();
   await page.goto(searchUrl);
-  await page.waitForNetworkIdle({ idleTime: 250 });
 
   let frame;
 
@@ -156,10 +157,11 @@ export const getPlaceInfo = async (name: string): Promise<PlaceInfo | null> => {
   let page = await browser.newPage();
   const searchUrl = `https://map.naver.com/p/search/${name}`;
   await page.goto(searchUrl);
-  await page.waitForNetworkIdle();
 
   let pageUrl = page.url();
   let placeNumber: string;
+
+  await page.waitForSelector('#searchIframe');
 
   if (pageUrl.search('place/') === -1) {
     let frame = await page.waitForFrame(

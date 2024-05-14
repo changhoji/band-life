@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ant-design/icons": "^5.3.7",
     "antd": "^5.17.0",
     "cheerio": "^1.0.0-rc.12",
     "dayjs": "^1.11.11",
