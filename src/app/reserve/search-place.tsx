@@ -23,7 +23,6 @@ export default function SearchPlace() {
     if (result === undefined) return;
 
     setPlaceNames(result);
-    console.log(`places = ${placeNames.toString()}`);
   };
 
   const onClick = async (name: string) => {
@@ -41,7 +40,6 @@ export default function SearchPlace() {
   };
 
   const renderItem = (item: string) => {
-    console.log(item);
     return (
       <List.Item>
         <div className='text-xs'>{item}</div>

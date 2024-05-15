@@ -1,19 +1,28 @@
 'use client';
 
-import { Button, ConfigProvider } from 'antd';
+import { Button, ConfigProvider, Progress } from 'antd';
 import TimeSelector from './time-selector';
 import { useRecoilState } from 'recoil';
 import { reserveTimeState } from '@/recoil/reserve-time';
-import { findEmptyRooms, getBookingUrl } from '@/api/crawler/crawl';
+import {
+  findEmptyRooms,
+  findEmptyRooms2,
+  getBookingUrl,
+  getPlaceData,
+  getRoomData,
+} from '@/api/crawler/crawl';
 import SearchPlace from './search-place';
 import { placesState } from '@/recoil/places';
 import EmptyRooms from './empty-rooms';
 import { emptyPlacesState } from '@/recoil/empty-places';
 import RegisteredPlaces from './registered-places';
 import { useState } from 'react';
+import { Place } from '@/api/crawler/type';
 
 export default function ReserveHome() {
   const [isSearching, setIsSearching] = useState(false);
+  const [roomCount, setRoomCount] = useState(0);
+  const [searchedRoomCount, setSearchedRoomCount] = useState(0);
 
   const [reserveTime, _] = useRecoilState(reserveTimeState); // time that wnat to search
   const [places, setPlaces] = useRecoilState(placesState);
@@ -22,22 +31,44 @@ export default function ReserveHome() {
   const onSearch = async () => {
     setIsSearching((v) => !v);
 
-    const urls = [];
+    const placeUrls = [];
     for (let i = 0; i < places.length; i++) {
-      urls.push(await getBookingUrl(places[i].id));
+      placeUrls.push(await getBookingUrl(places[i].id));
     }
 
-    console.log(urls);
+    const emptyRooms = await findEmptyRooms2(placeUrls, reserveTime);
 
-    const ret = await findEmptyRooms({
-      reserveTime: reserveTime,
-      urls: urls,
-    });
+    // let placeDatas: { place: Place; roomUrls: string[] }[] = [];
+    // await Promise.all(
+    //   Array.from(
+    //     placeUrls.map((placeUrl) =>
+    //       getPlaceData(placeUrl, reserveTime).then((value) => {
+    //         if (value === null) return;
+    //         placeDatas.push(value);
+    //         setRoomCount((cur) => cur + value.roomUrls.length);
+    //       })
+    //     )
+    //   )
+    // );
 
-    if (ret !== null) {
-      setEmptyPlaces(ret);
-    }
+    // await Promise.all(
+    //   Array.from(
+    //     placeDatas.map((placeData) =>
+    //       Promise.all(
+    //         Array.from(
+    //           placeData.roomUrls.map((roomUrl) =>
+    //             getRoomData(roomUrl, reserveTime).then((value) => {
+    //               setSearchedRoomCount((cur) => cur + 1);
+    //               if (value === null) return;
+    //             })
+    //           )
+    //         )
+    //       )
+    //     )
+    //   )
+    // );
 
+    setEmptyPlaces(emptyRooms);
     setIsSearching((v) => !v);
   };
 
@@ -64,6 +95,7 @@ export default function ReserveHome() {
             >
               검색!
             </Button>
+
             <EmptyRooms />
           </div>
         </div>
