@@ -150,7 +150,7 @@ export const searchPlaceInNaverMap = async (word: string) => {
 
 export const getPlaceInfo = async (name: string): Promise<PlaceInfo | null> => {
   let browser = await puppeteer.launch({
-    headless: true,
+    headless: false,
   });
 
   let page = await browser.newPage();
@@ -160,7 +160,8 @@ export const getPlaceInfo = async (name: string): Promise<PlaceInfo | null> => {
   let pageUrl = page.url();
   let placeNumber: string;
 
-  await page.waitForSelector('#searchIframe');
+  // await page.waitForSelector('#searchIframe');
+  await page.waitForNetworkIdle();
 
   if (pageUrl.search('place/') === -1) {
     let frame = await page.waitForFrame(
@@ -189,6 +190,7 @@ export const getPlaceInfo = async (name: string): Promise<PlaceInfo | null> => {
     if ($ === undefined) return null;
 
     pageUrl = $('.place_section > div:nth-child(4) a').attr('href')!;
+    console.log(`pageUrl: ${pageUrl}`);
     placeNumber = pageUrl.split('place/')[1].split('/booking')[0];
     console.log(pageUrl);
   } else {
