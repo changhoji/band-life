@@ -8,6 +8,7 @@ import { ReserveTime } from '@/recoil/reserve-time';
 import puppeteer, { Browser } from 'puppeteer';
 import dayjs from 'dayjs';
 import { Place, Room, PlaceInfo } from './type';
+import { Milonga } from 'next/font/google';
 
 export const getPlaceUrl = async (id: string) => {
   return `http://map.naver.com/p/entry/place/${id}?c=15.00,0,0,0,dh`;
@@ -24,9 +25,9 @@ export const findEmptyRooms = async ({
   reserveTime: ReserveTime;
   urls: string[];
 }) => {
-  console.log('asdf');
-  console.log(urls);
-  const browser = await puppeteer.launch({});
+  const browser = await puppeteer.launch({
+    headless: true,
+  });
 
   let places: Place[] = [];
 
@@ -43,7 +44,7 @@ export const findEmptyRooms = async ({
     page.close();
 
     if ($ == undefined) {
-      return;
+      return null;
     }
 
     let place: Place = {
@@ -65,7 +66,7 @@ export const findEmptyRooms = async ({
       const page = await browser.newPage();
 
       await page.goto(
-        roomUrl + `&startDate=${dayjs(reserveTime.date).format('YYYY-MM-DD')}`
+        roomUrl + `&startDate=${dayjs(reserveTime.date!).format('YYYY-MM-DD')}`
       );
       await page.waitForSelector('ul.time_list');
 
@@ -74,7 +75,7 @@ export const findEmptyRooms = async ({
       page.close();
 
       if ($ === undefined) {
-        return;
+        return null;
       }
 
       let room: Room = {
@@ -93,7 +94,7 @@ export const findEmptyRooms = async ({
       });
 
       let flag: boolean = true;
-      for (let i = reserveTime.from; i < reserveTime.to; i++) {
+      for (let i = reserveTime.from!; i < reserveTime.to!; i++) {
         if (timeClasses[i].search('disabled') != -1) {
           flag = false;
           break;
@@ -122,7 +123,6 @@ export const searchPlaceInNaverMap = async (word: string) => {
 
   const page = await browser.newPage();
   await page.goto(searchUrl);
-  await page.waitForNetworkIdle({ idleTime: 250 });
 
   let frame;
 
@@ -150,16 +150,18 @@ export const searchPlaceInNaverMap = async (word: string) => {
 
 export const getPlaceInfo = async (name: string): Promise<PlaceInfo | null> => {
   let browser = await puppeteer.launch({
-    headless: true,
+    headless: false,
   });
 
   let page = await browser.newPage();
   const searchUrl = `https://map.naver.com/p/search/${name}`;
   await page.goto(searchUrl);
-  await page.waitForNetworkIdle();
 
   let pageUrl = page.url();
   let placeNumber: string;
+
+  // await page.waitForSelector('#searchIframe');
+  await page.waitForNetworkIdle();
 
   if (pageUrl.search('place/') === -1) {
     let frame = await page.waitForFrame(
@@ -188,6 +190,7 @@ export const getPlaceInfo = async (name: string): Promise<PlaceInfo | null> => {
     if ($ === undefined) return null;
 
     pageUrl = $('.place_section > div:nth-child(4) a').attr('href')!;
+    console.log(`pageUrl: ${pageUrl}`);
     placeNumber = pageUrl.split('place/')[1].split('/booking')[0];
     console.log(pageUrl);
   } else {
@@ -199,4 +202,107 @@ export const getPlaceInfo = async (name: string): Promise<PlaceInfo | null> => {
     id: placeNumber,
     photoUrl: 'temp',
   };
+};
+
+export const findEmptyRooms2 = async (
+  placeUrls: string[],
+  reserveTime: ReserveTime
+) => {
+  const browser = await puppeteer.launch();
+
+  const places = await Promise.all(
+    Array.from(
+      placeUrls.map((placeUrl) => getPlaceData(browser, placeUrl, reserveTime))
+    )
+  );
+
+  return places.filter((place): place is NonNullable<Place> => place !== null);
+};
+
+export const getPlaceData = async (
+  browser: Browser,
+  placeUrl: string,
+  reserveTime: ReserveTime
+) => {
+  const page = await browser.newPage();
+  await page.goto(placeUrl);
+
+  // await page.$eval('#_title > div >:first_child', (e) =>
+  //   e.getAttribute('href')
+  // );
+
+  const content = await page.content();
+  const $ = load(content);
+  page.close();
+
+  if ($ === undefined) return null;
+
+  let place: Place = {
+    name: $('#_title > div >:first-child').text()!,
+    url: placeUrl,
+    photoUrl: 'temp',
+    rooms: [],
+  };
+
+  let roomUrls: string[] = [];
+  $('div.place_section_content ul li').map((index, element) => {
+    roomUrls[index] = $(element).find('li > div > a').attr('href')!;
+  });
+
+  const roomDatas = await Promise.all(
+    Array.from(
+      roomUrls.map((roomUrl) => getRoomData(browser, roomUrl, reserveTime))
+    )
+  );
+
+  const rooms = roomDatas.filter(
+    (roomData): roomData is NonNullable<Room> => roomData !== null
+  );
+
+  place.rooms = rooms;
+
+  return place;
+};
+
+export const getRoomData = async (
+  browser: Browser,
+  roomUrl: string,
+  reserveTime: ReserveTime
+) => {
+  const page = await browser.newPage();
+  page.goto(
+    roomUrl + `&startDate=${dayjs(reserveTime.date!).format('YYYY-MM-DD')}`
+  );
+  await page.waitForSelector('ul.time_list');
+
+  const content = await page.content();
+  const $ = load(content);
+  page.close();
+
+  if ($ === undefined) {
+    return null;
+  }
+
+  let room: Room = {
+    name: $('h3.info_title').text(),
+    url: roomUrl,
+    photoUrl: 'temp',
+    price: Number(
+      $('.compo_book_price > span > strong').text()!.replace(',', '')
+    ),
+  };
+
+  let timeClasses: string[] = [];
+  const times = $('ul.time_list > li');
+  times.map((index, element) => {
+    timeClasses[index] = $(element).attr('class')!;
+  });
+
+  for (let i = reserveTime.from!; i < reserveTime.to!; i++) {
+    if (timeClasses[i].search('disabled') != -1) {
+      return null;
+    }
+  }
+
+  return room;
 };

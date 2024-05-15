@@ -25,20 +25,37 @@ export default function TimeSelector() {
     return Array.from({ length: 59 }, (_, i) => i + 1);
   };
 
-  const onClick = () => {
-    if (date == null) {
-      alert('날짜를 선택해 주세요!');
-      return;
-    }
-    if (from == null || to == null) {
-      alert('시간을 선택해 주세요!');
-      return;
-    }
+  const onDateChange = (value: Dayjs) => {
+    if (value === null) return;
+    setReserveTime((cur) => {
+      return {
+        date: value,
+        from: cur.from,
+        to: cur.to,
+      };
+    });
+  };
 
-    setReserveTime({
-      date: date,
-      from: from,
-      to: to,
+  const onFromChange = (value: Dayjs) => {
+    setFrom(value.hour());
+    if (value === null) return;
+    setReserveTime((cur) => {
+      return {
+        date: cur.date,
+        from: value.hour(),
+        to: cur.to,
+      };
+    });
+  };
+
+  const onToChange = (value: Dayjs) => {
+    if (value === null) return;
+    setReserveTime((cur) => {
+      return {
+        date: cur.date,
+        from: cur.from,
+        to: value.hour(),
+      };
     });
   };
 
@@ -46,22 +63,24 @@ export default function TimeSelector() {
     <div className='flex'>
       <Space direction='vertical'>
         <DatePicker
-          onChange={(date) => setDate(date)}
+          placeholder='날짜'
+          onChange={onDateChange}
           minDate={dayjs().add(1, 'day')}
         />
         <TimePicker
-          onChange={(time) => setFrom(time.hour())}
+          placeholder='시작'
+          onChange={onFromChange}
           disabledMinutes={disabledMinutes}
           disabledSeconds={disabledSeconds}
         />
         <TimePicker
-          onChange={(time) => setTo(time.hour())}
+          placeholder='끝'
+          onChange={onToChange}
           disabledHours={disabledToHours}
           disabledMinutes={disabledMinutes}
           disabledSeconds={disabledSeconds}
           disabled={from == null}
         />
-        <Button onClick={onClick}>완료</Button>
       </Space>
     </div>
   );
