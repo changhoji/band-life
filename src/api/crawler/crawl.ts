@@ -115,8 +115,15 @@ export const findEmptyRooms = async ({
 
 export const searchPlaceInNaverMap = async (word: string) => {
   const browser = await puppeteer.launch({
-    args: ['--disabled-features=site-per-process'],
     headless: true,
+    executablePath: '/usr/bin/chromium-browser',
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+    ],
+    ignoreHTTPSErrors: true,
   });
 
   const searchUrl = `https://map.naver.com/p/search/${word}`;
