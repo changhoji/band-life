@@ -5,7 +5,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { Element, load } from 'cheerio';
 import { ReserveTime } from '@/recoil/reserve-time';
-import puppeteer, { Browser } from 'puppeteer';
+import puppeteer, { Browser, executablePath } from 'puppeteer';
 import dayjs from 'dayjs';
 import { Place, Room, PlaceInfo } from './type';
 import { Milonga } from 'next/font/google';
@@ -21,6 +21,10 @@ export const getBookingUrl = async (id: string) => {
 const getBrowser = async () => {
   const browser = await puppeteer.launch({
     args: ['--no-sandbox'],
+    executablePath:
+      process.env.NODE_ENV === 'production'
+        ? 
+        : executablePath(),
   });
 
   return browser;
