@@ -34,9 +34,7 @@ export const findEmptyRooms = async ({
   reserveTime: ReserveTime;
   urls: string[];
 }) => {
-  const browser = await puppeteer.launch({
-    headless: true,
-  });
+  const browser = await getBrowser();
 
   let places: Place[] = [];
 
@@ -157,9 +155,7 @@ export const searchPlaceInNaverMap = async (word: string) => {
 };
 
 export const getPlaceInfo = async (name: string): Promise<PlaceInfo | null> => {
-  let browser = await puppeteer.launch({
-    headless: false,
-  });
+  let browser = await getBrowser();
 
   let page = await browser.newPage();
   const searchUrl = `https://map.naver.com/p/search/${name}`;
@@ -216,7 +212,7 @@ export const findEmptyRooms2 = async (
   placeUrls: string[],
   reserveTime: ReserveTime
 ) => {
-  const browser = await puppeteer.launch();
+  const browser = await getBrowser();
 
   const places = await Promise.all(
     Array.from(
