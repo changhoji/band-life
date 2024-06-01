@@ -76,11 +76,6 @@ COPY . .
 # Next.js 빌드
 RUN npm run build
 
-# 빌드 결과물과 필요한 파일들만 복사
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
-
 # 애플리케이션 실행 포트 설정
 EXPOSE 3000
 
