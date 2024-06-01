@@ -21,10 +21,7 @@ export const getBookingUrl = async (id: string) => {
 const getBrowser = async () => {
   const browser = await puppeteer.launch({
     args: ['--no-sandbox'],
-    executablePath:
-      process.env.NODE_ENV === 'production'
-        ? process.env.PUPPETEER_EXECUTABLE_PATH
-        : executablePath(),
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
   });
 
   return browser;
