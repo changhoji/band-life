@@ -1,7 +1,7 @@
-import { getPlaceInfo, searchPlaceInNaverMap } from '@/api/crawler/crawl';
+import { getPlaceInfo, searchPlaceInNaverMap } from '@/service/crawler/crawl';
 import { placesState } from '@/recoil/places';
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, List, Spin } from 'antd';
+import { Button, List } from 'antd';
 import Search from 'antd/es/input/Search';
 import { useState } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';

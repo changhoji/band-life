@@ -6,18 +6,17 @@ import { useRecoilState } from 'recoil';
 import { reserveTimeState } from '@/recoil/reserve-time';
 import {
   findEmptyRooms,
-  findEmptyRooms2,
   getBookingUrl,
   getPlaceData,
   getRoomData,
-} from '@/api/crawler/crawl';
+} from '@/service/crawler/crawl';
 import SearchPlace from './search-place';
 import { placesState } from '@/recoil/places';
 import EmptyRooms from './empty-rooms';
 import { emptyPlacesState } from '@/recoil/empty-places';
 import RegisteredPlaces from './registered-places';
 import { useState } from 'react';
-import { Place } from '@/api/crawler/type';
+import { Place } from '@/service/crawler/type';
 
 export default function ReserveHome() {
   const [isSearching, setIsSearching] = useState(false);
@@ -36,7 +35,7 @@ export default function ReserveHome() {
       placeUrls.push(await getBookingUrl(places[i].id));
     }
 
-    const emptyRooms = await findEmptyRooms2(placeUrls, reserveTime);
+    const emptyRooms = await findEmptyRooms(placeUrls, reserveTime);
 
     // let placeDatas: { place: Place; roomUrls: string[] }[] = [];
     // await Promise.all(
